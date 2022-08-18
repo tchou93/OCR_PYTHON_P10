@@ -1,0 +1,1 @@
+"D:\Tan\Travail\developpement\python\projetOC\projet10\env\Scripts\python.exe" "D:\Tan\Travail\developpement\python\projetOC\projet10\src\manage.py" runserver
