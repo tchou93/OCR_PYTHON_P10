@@ -4,17 +4,20 @@ from rest_framework_nested import routers
 from . import views
 
 router = routers.SimpleRouter()
-router.register(r'projects', views.ProjectViewSet, basename='projects')
+router.register(r'projects', views.ProjectView, basename='projects')
 
-user_issue_project_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
-user_issue_project_router.register(r"issues", views.IssueViewSet, basename="issues")
-# users_issues_router.register(r"users", , basename="users")
+issues_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
+issues_router.register(r"issues", views.IssueView, basename="issues")
 
-# issue_comment_router = routers.NestedSimpleRouter(user_issue_project_router, r"issues", lookup="issues")
-# issue_comment_router.register(r"comments", , basename="comments")
+comments_router = routers.NestedSimpleRouter(issues_router, r'issues', lookup='issues')
+comments_router.register(r"comments", views.CommentView, basename="comments")
 
+contributors_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
+contributors_router.register(r"users", views.ContributorView, basename="users")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("", include(user_issue_project_router.urls)),
+    path("", include(issues_router.urls)),
+    path("", include(contributors_router.urls)),
+    path("", include(comments_router.urls)),
 ]
