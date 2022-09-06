@@ -24,6 +24,8 @@ class IssueSerializer(serializers.ModelSerializer):
 
 
 class ContributorSerializer(serializers.ModelSerializer):
+    project = ProjectSerializer()
+
     class Meta:
         model = Contributor
         fields = "__all__"

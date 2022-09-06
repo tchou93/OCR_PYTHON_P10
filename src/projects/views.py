@@ -5,12 +5,12 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth.models import User
 from projects.models import Project, Contributor, Issue, Comment
+from projects.permissions import ProjectPermission, ContributorPermission, IssueOrCommentPermission
 from projects.serializer import ProjectSerializer, IssueSerializer, ContributorSerializer, CommentSerializer
 
 
 class ProjectView(ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    # utiliser haspermission voir : https://www.django-rest-framework.org/api-guide/permissions/
+    permission_classes = [IsAuthenticated, ProjectPermission]
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
@@ -35,7 +35,7 @@ class ProjectView(ModelViewSet):
 
 
 class ContributorView(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ContributorPermission]
     serializer_class = ContributorSerializer
 
     def get_queryset(self):
@@ -59,7 +59,7 @@ class ContributorView(ModelViewSet):
 
 
 class IssueView(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IssueOrCommentPermission]
     serializer_class = IssueSerializer
 
     def get_queryset(self):
@@ -75,7 +75,6 @@ class IssueView(ModelViewSet):
         project = Project.objects.get(id=kwargs['projects_pk'])
         serializer = IssueSerializer(data=request.data)
         assignee = User.objects.get(id=request.data['assignee'])
-        # and Contributor.objects.filter(user=assignee).filter(project=project).exists()
         if serializer.is_valid():
             serializer.save(author=request.user, project=project, assignee=assignee)
             # serializer.save(author=request.user, project=project, assignee=assignee)
@@ -85,7 +84,7 @@ class IssueView(ModelViewSet):
 
 
 class CommentView(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IssueOrCommentPermission]
     serializer_class = CommentSerializer
 
     def get_queryset(self):
