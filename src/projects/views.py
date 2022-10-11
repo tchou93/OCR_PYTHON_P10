@@ -1,5 +1,6 @@
 # Create your views here.
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -22,16 +23,23 @@ class ProjectView(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def create(self, request, *args, **kwargs):
-        serializer = ProjectSerializer(data=request.data)
-        if serializer.is_valid():
-            project = serializer.save(author=request.user)
-            Contributor.objects.create(user=request.user,
-                                       project=project,
-                                       role='AUTHOR')
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        project = serializer.save(author=request.user)
+        Contributor.objects.create(user=request.user,
+                                   project=project,
+                                   role='AUTHOR')
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        message = f"Project <{instance.title}> has been deleted."
+        self.perform_destroy(instance)
+        return Response({"message": message}, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)
 
 
 class ContributorView(ModelViewSet):
@@ -47,15 +55,26 @@ class ContributorView(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def create(self, request, *args, **kwargs):
-        project = Project.objects.get(id=kwargs['projects_pk'])
-        serializer = ContributorSerializer(data=request.data)
-
-        if serializer.is_valid():
-            user = User.objects.get(id=request.data['user'])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not Contributor.objects.filter(user=request.data['user'], project=kwargs['projects_pk']).exists():
+            project = get_object_or_404(Project, pk=kwargs['projects_pk'])
+            user = get_object_or_404(User, pk=request.data['user'])
             serializer.save(user=user, project=project, role='CONTRIBUTOR')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            message = f"User ID{request.data['user']} has already been linked to the project."
+            return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        message = f"Contributor <{instance.user.username}> has been deleted."
+        self.perform_destroy(instance)
+        return Response({"message": message}, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)
 
 
 class IssueView(ModelViewSet):
@@ -66,21 +85,41 @@ class IssueView(ModelViewSet):
         return Issue.objects.all()
 
     def list(self, request, *args, **kwargs):
-        projects_pk = kwargs['projects_pk']
-        queryset = Issue.objects.filter(project=projects_pk)
+        queryset = Issue.objects.filter(project=kwargs['projects_pk'])
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def create(self, request, *args, **kwargs):
-        project = Project.objects.get(id=kwargs['projects_pk'])
-        serializer = IssueSerializer(data=request.data)
-        assignee = User.objects.get(id=request.data['assignee'])
-        if serializer.is_valid():
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        project = get_object_or_404(Project, pk=kwargs['projects_pk'])
+        if Contributor.objects.filter(user_id=request.data['assignee'], project=project).exists():
+            assignee = get_object_or_404(User, id=request.data['assignee'])
             serializer.save(author=request.user, project=project, assignee=assignee)
-            # serializer.save(author=request.user, project=project, assignee=assignee)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            message = f"Assignee must be part of the project!"
+            return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        message = f"Issue <{instance.title}> has been deleted."
+        self.perform_destroy(instance)
+        return Response({"message": message}, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        project = get_object_or_404(Project, pk=kwargs['projects_pk'])
+        instance = self.get_object()
+        if 'assignee' in request.data:
+            if not Contributor.objects.filter(user_id=request.data['assignee'], project=project).exists():
+                message = f"Assignee must be part of the project!"
+                return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 class CommentView(ModelViewSet):
@@ -96,11 +135,18 @@ class CommentView(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def create(self, request, *args, **kwargs):
-        issue = Issue.objects.get(id=kwargs['issues_pk'])
-        serializer = CommentSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        issue = get_object_or_404(Issue, pk=kwargs['issues_pk'])
+        serializer.save(author=request.user, issue=issue)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if serializer.is_valid():
-            serializer.save(author=request.user, issue=issue)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        message = f"Comment <{instance.description}> has been deleted."
+        self.perform_destroy(instance)
+        return Response({"message": message}, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)

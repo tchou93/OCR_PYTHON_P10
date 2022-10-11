@@ -38,7 +38,7 @@ class Project(models.Model):
     author = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Project({self.title})"
+        return f"Author: {self.author} *** Project title:  {self.title}"
 
 
 class Contributor(models.Model):
@@ -47,7 +47,7 @@ class Contributor(models.Model):
     role = models.CharField(max_length=50, choices=CHOICES_PERMISSION)
 
     def __str__(self):
-        return f"Contributor({self.user})"
+        return f"User: {self.user}  *** Project title: <{self.project.title}> "
 
 
 class Issue(models.Model):
@@ -62,7 +62,7 @@ class Issue(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Issue({self.title})"
+        return f"Author: {self.author}  *** Issue title: <{self.title}>"
 
 
 class Comment(models.Model):
@@ -72,4 +72,4 @@ class Comment(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Comment({self.author.name} => {self.issue.title})"
+        return f"Author: {self.author}  *** Comment title: <{self.issue.title}>"

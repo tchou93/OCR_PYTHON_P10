@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
 
@@ -11,9 +10,3 @@ class UserView(ModelViewSet):
 
     def get_queryset(self):
         return User.objects.all()
-
-# class UserView(generics.CreateAPIView):
-#     serializer_class = UserSerializer
-#
-#     def get_queryset(self):
-#         return User.objects.all()
