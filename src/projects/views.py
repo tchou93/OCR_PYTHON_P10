@@ -68,9 +68,13 @@ class ContributorView(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        message = f"Contributor <{instance.user.username}> has been deleted."
-        self.perform_destroy(instance)
-        return Response({"message": message}, status=status.HTTP_200_OK)
+        if not(instance.role == "AUTHOR"):
+            message = f"Contributor <{instance.user.username}> has been deleted."
+            self.perform_destroy(instance)
+            return Response({"message": message}, status=status.HTTP_200_OK)
+        else:
+            message = f"Author cannot be deleted !"
+            return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         kwargs['partial'] = True

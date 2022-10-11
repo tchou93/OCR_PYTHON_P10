@@ -16,9 +16,9 @@ $ source env/Scripts/activate
 $ pip install -r requirements.txt
 ```
 
-## Steps to migrate and run the server:
+## Steps to run the server from the project root:
 ```
-$ python manage.py migrate
+$ cd src
 $ python manage.py runserver
 ```
 
