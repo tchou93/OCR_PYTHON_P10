@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth.models import User
 from projects.models import Project, Contributor, Issue, Comment
-from projects.permissions import ProjectPermission, ContributorPermission, IssueOrCommentPermission
+from projects.permissions import ProjectPermission, ContributorPermission, CommentPermission, \
+    IssuePermission
 from projects.serializer import ProjectSerializer, IssueSerializer, ContributorSerializer, CommentSerializer
 
 
@@ -82,7 +83,7 @@ class ContributorView(ModelViewSet):
 
 
 class IssueView(ModelViewSet):
-    permission_classes = [IsAuthenticated, IssueOrCommentPermission]
+    permission_classes = [IsAuthenticated, IssuePermission]
     serializer_class = IssueSerializer
 
     def get_queryset(self):
@@ -127,7 +128,7 @@ class IssueView(ModelViewSet):
 
 
 class CommentView(ModelViewSet):
-    permission_classes = [IsAuthenticated, IssueOrCommentPermission]
+    permission_classes = [IsAuthenticated, CommentPermission]
     serializer_class = CommentSerializer
 
     def get_queryset(self):

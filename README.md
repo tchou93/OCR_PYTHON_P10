@@ -32,8 +32,8 @@ https://documenter.getpostman.com/view/23071143/2s83zjqNRD
 Some Users have been added to execute some manual tests:
 
 | Admin/user |
-login: tan
-pass: a
+login: admin
+pass: admin123
 
 | Other users |
 login: test1
